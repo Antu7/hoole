@@ -1,0 +1,5 @@
+module CEngine [system] {
+    header "../../Vendor/needle.h"
+    link "needle"
+    export *
+}
