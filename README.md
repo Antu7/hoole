@@ -37,7 +37,25 @@
 
 ## Install
 
-Hoole is built from source. It takes a couple of minutes and you don't need any programming experience.
+### Option A: Download (easiest)
+
+1. Download **Hoole.dmg** from the [latest release](https://github.com/antu7/hoole/releases/latest).
+2. Open it and drag **Hoole** into **Applications**.
+3. Open Hoole from Applications. macOS will say it *can't verify the developer*. That's expected: Hoole is a free app and isn't registered with Apple. To open it anyway:
+   - Click **Done** on the warning.
+   - Go to **System Settings → Privacy & Security**, scroll down to *"Hoole was blocked…"*, and click **Open Anyway**.
+   - Enter your password and click **Open**.
+
+   Or, if you're comfortable with Terminal, run this once instead:
+   ```sh
+   xattr -dr com.apple.quarantine /Applications/Hoole.app
+   ```
+
+You only need to do this the first time. Then continue with [First launch](#first-launch-allow-two-permissions).
+
+### Option B: Build from source
+
+It takes a couple of minutes and you don't need any programming experience.
 
 **1. Install Apple's command line tools** (skip if you already have them). Open **Terminal** (press ⌘ Space, type *Terminal*, press Return) and run:
 
@@ -113,6 +131,10 @@ You can also click the big microphone button to start and stop recording without
 **I want to start fresh.** Click **Clear** next to *Recent* to delete your history.
 
 ## Updating
+
+**Installed from the DMG?** Quit Hoole, download the newest `Hoole.dmg` from [Releases](https://github.com/antu7/hoole/releases), and drag it into Applications, replacing the old one. Your settings and permissions carry over.
+
+**Built from source?**
 
 ```sh
 cd hoole
