@@ -41,7 +41,7 @@ final class AppState {
     /// Shown in the floating pill right after a dictation ends.
     var flash: String?
     var history: [Entry] = load("history") ?? [] { didSet { save(history, "history") } }
-    var language = UserDefaults.standard.string(forKey: "language") ?? "" {
+    var language = UserDefaults.standard.string(forKey: "language") ?? "en" {
         didSet { UserDefaults.standard.set(language, forKey: "language") }
     }
     var autoType = UserDefaults.standard.object(forKey: "autoType") as? Bool ?? true {

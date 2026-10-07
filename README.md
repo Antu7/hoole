@@ -26,7 +26,7 @@
 - **Private by design:** speech recognition runs on your Mac. No account, no cloud, no internet needed after setup.
 - **Fast:** words show up within about a second of saying them.
 - **Your shortcut:** a single key like **fn** or **F5**, a combo like **⌥ Space**, or keys held together like **A + Space**.
-- **7 languages:** English, German, French, Spanish, Italian, Dutch and Polish, or let Hoole detect the language.
+- **7 languages:** English (the default), German, French, Spanish, Italian, Dutch and Polish, or let Hoole detect the language.
 - **No time limit:** talk for as long as you like.
 
 ## Requirements
@@ -112,7 +112,7 @@ Want to keep going? Hold the shortcut again; Hoole adds a space and continues yo
 |---|---|
 | **Shortcut** | Click it, then press the key or keys you want and let go. Esc cancels. |
 | **Microphone** | Choose which mic to use: built-in, AirPods, a USB mic, and so on. |
-| **Language** | Pick your language, or leave it on Auto-detect. |
+| **Language** | English by default. Pick another language, or Auto-detect. |
 | **Type where my cursor is** | Turn this off to have Hoole copy text to the clipboard instead of typing it. |
 | **Recent** | Your last few dictations. Click one to copy it again. |
 
