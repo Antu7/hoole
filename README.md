@@ -17,6 +17,11 @@
 </p>
 
 <p align="center">
+  🇬🇧 🇧🇩 🇮🇳 🇪🇸 🇫🇷 🇩🇪 🇸🇦 🇨🇳 🇯🇵 🇰🇷 🇷🇺 🇧🇷 🇹🇷 🇵🇰 🇮🇩 🇮🇹<br>
+  <a href="#supported-languages"><b>100 languages supported</b></a>
+</p>
+
+<p align="center">
   <img src="assets/popover.png" width="360" alt="Hoole menu bar window">
 </p>
 
@@ -37,6 +42,42 @@
 - **About 100 languages:** English by default, plus Bengali, Hindi, Urdu, Arabic, Chinese, Japanese, Spanish, French, German and many more, or let Hoole detect the language. (Accuracy is best for widely spoken languages, English especially.)
 - **Live mode too:** turn off *Best accuracy* and words are typed live while you talk, using a smaller, faster model (7 languages).
 - **No time limit:** talk for as long as you like.
+
+## Supported languages
+
+**With Best accuracy on (the default): 100 languages.** Pick one in the Language menu, or choose Auto-detect.
+
+| | | | |
+|---|---|---|---|
+| 🇿🇦 Afrikaans | 🇦🇱 Albanian | 🇪🇹 Amharic | 🇸🇦 Arabic |
+| 🇦🇲 Armenian | 🇮🇳 Assamese | 🇦🇿 Azerbaijani | 🇷🇺 Bashkir |
+| 🇪🇸 Basque | 🇧🇾 Belarusian | 🇧🇩 Bengali | 🇧🇦 Bosnian |
+| 🇫🇷 Breton | 🇧🇬 Bulgarian | 🇭🇰 Cantonese | 🇦🇩 Catalan |
+| 🇨🇳 Chinese | 🇭🇷 Croatian | 🇨🇿 Czech | 🇩🇰 Danish |
+| 🇳🇱 Dutch | 🇬🇧 English | 🇪🇪 Estonian | 🇫🇴 Faroese |
+| 🇫🇮 Finnish | 🇫🇷 French | 🇪🇸 Galician | 🇬🇪 Georgian |
+| 🇩🇪 German | 🇬🇷 Greek | 🇮🇳 Gujarati | 🇭🇹 Haitian Creole |
+| 🇳🇬 Hausa | 🇺🇸 Hawaiian | 🇮🇱 Hebrew | 🇮🇳 Hindi |
+| 🇭🇺 Hungarian | 🇮🇸 Icelandic | 🇮🇩 Indonesian | 🇮🇹 Italian |
+| 🇯🇵 Japanese | 🇮🇩 Javanese | 🇮🇳 Kannada | 🇰🇿 Kazakh |
+| 🇰🇭 Khmer | 🇰🇷 Korean | 🇱🇦 Lao | 🌐 Latin |
+| 🇱🇻 Latvian | 🇨🇩 Lingala | 🇱🇹 Lithuanian | 🇱🇺 Luxembourgish |
+| 🇲🇰 Macedonian | 🇲🇬 Malagasy | 🇲🇾 Malay | 🇮🇳 Malayalam |
+| 🇲🇹 Maltese | 🇳🇿 Maori | 🇮🇳 Marathi | 🇲🇳 Mongolian |
+| 🇲🇲 Myanmar | 🇳🇵 Nepali | 🇳🇴 Norwegian | 🇳🇴 Nynorsk |
+| 🇫🇷 Occitan | 🇦🇫 Pashto | 🇮🇷 Persian | 🇵🇱 Polish |
+| 🇵🇹 Portuguese | 🇮🇳 Punjabi | 🇷🇴 Romanian | 🇷🇺 Russian |
+| 🌐 Sanskrit | 🇷🇸 Serbian | 🇿🇼 Shona | 🇵🇰 Sindhi |
+| 🇱🇰 Sinhala | 🇸🇰 Slovak | 🇸🇮 Slovenian | 🇸🇴 Somali |
+| 🇪🇸 Spanish | 🇮🇩 Sundanese | 🇹🇿 Swahili | 🇸🇪 Swedish |
+| 🇵🇭 Tagalog | 🇹🇯 Tajik | 🇱🇰 Tamil | 🇷🇺 Tatar |
+| 🇮🇳 Telugu | 🇹🇭 Thai | 🌐 Tibetan | 🇹🇷 Turkish |
+| 🇹🇲 Turkmen | 🇺🇦 Ukrainian | 🇵🇰 Urdu | 🇺🇿 Uzbek |
+| 🇻🇳 Vietnamese | 🇬🇧 Welsh | 🌐 Yiddish | 🇳🇬 Yoruba |
+
+**With Best accuracy off (live typing): 7 languages.** 🇬🇧 English · 🇩🇪 German · 🇫🇷 French · 🇪🇸 Spanish · 🇮🇹 Italian · 🇳🇱 Dutch · 🇵🇱 Polish
+
+> Flags show a country where each language is widely spoken; 🌐 marks languages without a single home country. Accuracy is highest for widely spoken languages, English especially.
 
 ## Requirements
 
