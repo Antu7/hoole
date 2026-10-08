@@ -178,7 +178,7 @@ You can also click the big microphone button to start and stop recording without
 
 **My shortcut stopped typing a letter.** If your shortcut includes a key that normally types something (like **A + Space** or **⇧** alone), that key can't type normally while Hoole is running. Hoole warns you when you pick one. Shortcuts with **fn**, **⌥**, **⌃** or **⌘** avoid this.
 
-**Hoole typed words I didn't say.** In a very quiet room, background noise is sometimes heard as a short phrase. Press <kbd>fn</kbd> only while you're speaking.
+**Hoole says "Didn't catch that".** Hoole only transcribes when it hears speech, so it never types made-up words from background noise. Speak at a normal volume, close enough to the selected microphone.
 
 **I want to start fresh.** Click **Clear** next to *Recent* to delete your history.
 

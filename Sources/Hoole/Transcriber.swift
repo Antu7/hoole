@@ -66,7 +66,7 @@ final class Transcriber {
         try engine.start()
     }
 
-    /// `done` gets the text, whether the mic was completely silent, and the whole recording.
+    /// `done` gets the text, whether the mic was completely silent, and the whole recording (empty if no speech).
     func stop(_ done: @escaping (String, Bool, [Float]) -> Void) {
         engine.inputNode.removeTap(onBus: 0)
         engine.stop()
@@ -76,7 +76,7 @@ final class Transcriber {
             self.apply(self.call { needle_stream_transcribe_stop($0, $1) })
             let text = self.committed.joined(separator: " ")
             let silent = self.peak == 0
-            let audio = self.recording
+            let audio = containsSpeech(self.recording) ? self.recording : []
             DispatchQueue.main.async { done(text, silent, audio) }
         }
     }
@@ -183,4 +183,19 @@ private func stringProperty(_ id: AudioObjectID, _ selector: AudioObjectProperty
     var size = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
     guard AudioObjectGetPropertyData(id, &address, 0, nil, &size, &value) == noErr, let value else { return nil }
     return value.takeRetainedValue() as String
+}
+
+/// A rough voice check: speech has syllables much louder than the room's background hum; steady noise doesn't.
+/// Whisper invents phrases ("Thank you.", "I'm sorry.") when given only noise, so it shouldn't get any.
+/// ponytail: energy heuristic; a real VAD model is the upgrade if this misfires on very quiet speakers.
+func containsSpeech(_ samples: [Float]) -> Bool {
+    let frame = 1600 // 100 ms at 16 kHz
+    guard samples.count >= frame * 3 else { return false }
+    var levels: [Float] = stride(from: 0, to: samples.count - frame, by: frame).map { start in
+        sqrt(samples[start..<start + frame].reduce(0) { $0 + $1 * $1 } / Float(frame))
+    }
+    levels.sort()
+    let background = levels[levels.count / 5]           // quiet 20th percentile
+    let loud = levels[min(levels.count - 1, levels.count * 95 / 100)]
+    return loud > 0.008 && loud > background * 2.5
 }

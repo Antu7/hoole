@@ -164,7 +164,8 @@ final class AppState {
         transcriber.stop { [weak self] fastText, silent, audio in
             // Every onCommit has already run: they're queued on main ahead of this.
             guard let self else { return }
-            guard self.usingWhisper, !silent, !audio.isEmpty else { return self.finish(fastText, silent: silent) }
+            guard self.usingWhisper, !silent else { return self.finish(fastText, silent: silent) }
+            guard !audio.isEmpty else { return self.finish("", silent: false) } // no speech: don't let Whisper invent some
             self.committed = self.livePreview ? fastText : ""
             self.pending = ""
             self.whisper.transcribe(audio, language: self.language.isEmpty ? nil : self.language) { text, _ in

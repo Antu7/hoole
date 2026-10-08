@@ -45,6 +45,7 @@ final class Whisper {
                 params.print_timestamps = false
                 params.no_timestamps = true
                 params.translate = false
+                params.suppress_nst = true // drop non-speech tokens like "[music]"
                 text = (language ?? "auto").withCString { lang in
                     params.language = lang
                     let code = samples.withUnsafeBufferPointer { whisper_full(context, params, $0.baseAddress, Int32($0.count)) }
@@ -55,7 +56,9 @@ final class Whisper {
                 }
             }
             let elapsed = Date().timeIntervalSince(started)
-            let result = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            var result = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            // On silence Whisper can return just "-" or "..."; that's not speech, so don't type it.
+            if !result.contains(where: { $0.isLetter || $0.isNumber }) { result = "" }
             DispatchQueue.main.async { done(result, elapsed) }
         }
     }
