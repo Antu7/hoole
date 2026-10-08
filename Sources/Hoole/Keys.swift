@@ -5,7 +5,7 @@ struct Shortcut: Codable, Equatable {
     var keys: Set<Int64> // virtual key codes, right-hand modifiers folded onto the left ones
     var display: String
 
-    static let optionSpace = Shortcut(keys: [58, 49], display: "⌥ + Space")
+    static let fn = Shortcut(keys: [63], display: "fn")
 
     /// True when a key in it would normally type something and no ⌘⌥⌃fn guards it, or it's ⇧ alone (every capital letter).
     var blocksTyping: Bool {
@@ -39,7 +39,7 @@ final class KeyWatcher {
     }
 
     private let lock = NSLock()
-    private var _shortcut = Shortcut.optionSpace
+    private var _shortcut = Shortcut.fn
     private var _onRecorded: ((Shortcut?) -> Void)?  // non-nil while recording a new shortcut
 
     // Tap thread only.

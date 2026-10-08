@@ -203,9 +203,9 @@ struct RecordButton: View {
             .disabled(state.phase == .loading || state.phase == .finishing)
 
             HStack(spacing: 4) {
-                Text(recording ? "Listening while you hold" : "Hold")
+                Text(recording ? "Listening… release" : "Press")
                 KeyCap(state.shortcut.display)
-                if !recording { Text("and talk, let go to stop") }
+                Text(recording ? "to stop" : "to talk, release to stop")
             }
             .font(.caption)
             .foregroundStyle(ink.opacity(0.6))

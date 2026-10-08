@@ -54,7 +54,7 @@ final class AppState {
     var micUID = UserDefaults.standard.string(forKey: "micUID") ?? "" {
         didSet { UserDefaults.standard.set(micUID, forKey: "micUID") }
     }
-    var shortcut: Shortcut = load("shortcut") ?? .optionSpace {
+    var shortcut: Shortcut = load("shortcut") ?? .fn {
         didSet { save(shortcut, "shortcut"); keys.shortcut = shortcut }
     }
 

@@ -5,8 +5,15 @@
 <h1 align="center">Hoole</h1>
 
 <p align="center">
-  <b>Hold a key, talk, and your words are typed wherever your cursor is.</b><br>
-  Free, open-source dictation for the Mac. Runs completely offline: your voice never leaves your computer.
+  <b>Press <kbd>fn</kbd> to talk. Release to stop. Your words are typed wherever your cursor is.</b><br>
+  Free, open-source dictation for the Mac.
+</p>
+
+<h3 align="center">🔒 100% offline. Your voice never leaves your Mac.</h3>
+
+<p align="center">
+  No internet, no account, no cloud, no tracking.<br>
+  Speech recognition runs entirely on your Mac, so it works on a plane, in a basement, or with Wi-Fi switched off.
 </p>
 
 <p align="center">
@@ -21,11 +28,12 @@
 
 ## Why Hoole
 
+- **Works fully offline:** once installed, Hoole never needs the internet. There's no server to send your voice to; the speech model lives inside the app. Turn off Wi-Fi and it works exactly the same.
 - **Types for you, anywhere:** Notes, Slack, Mail, your browser, the terminal. If there's a cursor, Hoole can type there.
-- **Push to talk:** hold your shortcut while you speak, let go when you're done. Words appear as you talk.
-- **Private by design:** speech recognition runs on your Mac. No account, no cloud, no internet needed after setup.
+- **Press to talk, release to stop:** press and hold **fn** while you speak; release it and Hoole stops listening. Words appear as you talk.
+- **Private by design:** no account, no analytics, nothing uploaded. Ever.
 - **Fast:** words show up within about a second of saying them.
-- **Your shortcut:** a single key like **fn** or **F5**, a combo like **⌥ Space**, or keys held together like **A + Space**.
+- **Your shortcut:** **fn** by default, or pick your own: a single key like **F5**, a combo like **⌥ Space**, or keys held together like **A + Space**.
 - **7 languages:** English (the default), German, French, Spanish, Italian, Dutch and Polish, or let Hoole detect the language.
 - **No time limit:** talk for as long as you like.
 
@@ -100,11 +108,12 @@ For Accessibility, macOS opens **System Settings → Privacy & Security → Acce
 ## How to use
 
 1. Click into any text field: a message, a document, a search box, a terminal.
-2. **Hold your shortcut** (default: **⌥ Option + Space**).
-3. Talk. A small bar at the bottom of the screen shows that Hoole is listening, along with your words.
-4. **Let go.** Your words are typed where your cursor was.
+2. **Press and hold <kbd>fn</kbd> to talk.** A small bar at the bottom of the screen shows that Hoole is listening, along with your words.
+3. **Release <kbd>fn</kbd> to stop listening.** Your words are typed where your cursor was.
 
-Want to keep going? Hold the shortcut again; Hoole adds a space and continues your sentence.
+Want to keep going? Press <kbd>fn</kbd> again; Hoole adds a space and continues your sentence.
+
+> **Tip:** if pressing <kbd>fn</kbd> also opens the emoji picker or switches your keyboard language, go to **System Settings → Keyboard** and set **"Press 🌐 key to"** to **Do Nothing**. No fn key on your keyboard? Pick another shortcut in Hoole's settings.
 
 ### Settings (click the menu bar icon)
 
@@ -126,7 +135,7 @@ You can also click the big microphone button to start and stop recording without
 
 **My shortcut stopped typing a letter.** If your shortcut includes a key that normally types something (like **A + Space** or **⇧** alone), that key can't type normally while Hoole is running. Hoole warns you when you pick one. Shortcuts with **fn**, **⌥**, **⌃** or **⌘** avoid this.
 
-**Hoole typed words I didn't say.** In a very quiet room, background noise is sometimes heard as a short phrase. Hold the shortcut only while you're speaking.
+**Hoole typed words I didn't say.** In a very quiet room, background noise is sometimes heard as a short phrase. Press <kbd>fn</kbd> only while you're speaking.
 
 **I want to start fresh.** Click **Clear** next to *Recent* to delete your history.
 
@@ -153,7 +162,11 @@ Quit Hoole first (menu bar icon → **Quit**), then open it again after copying.
 
 ## Privacy
 
-Hoole records audio only while you hold the shortcut (or after you click the record button). The audio is turned into text on your Mac and then thrown away. Nothing is uploaded, and Hoole doesn't collect any analytics. Your recent dictations are stored only on your Mac.
+Hoole works **100% offline**. It contains no networking code at all: no servers, no accounts, no analytics, no updates checking in the background.
+
+It records audio only while you press your shortcut (or after you click the record button). The audio is turned into text on your Mac and then thrown away. Your recent dictations are stored only on your Mac, and **Clear** deletes them.
+
+The internet is used just once: to download Hoole (or, if you build from source, to fetch the speech model during the first build).
 
 ## Making a release build
 
