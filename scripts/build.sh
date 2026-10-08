@@ -23,7 +23,12 @@ mkdir -p Vendor build
 fetch "$HF/needle3/resolve/$ENGINE_REV/python/cactus_needle-3.2.0-py3-none-macosx_11_0_arm64.whl" Vendor/engine.whl 3b0887a43cd6e9a99009fabf35b231c11bb3a978ab8af94b8119b2eb76e19832
 [ -f Vendor/libneedle.dylib ] || unzip -p Vendor/engine.whl needle/libneedle3.dylib > Vendor/libneedle.dylib
 fetch "$HF/needle3/resolve/$ENGINE_REV/macos-arm64/needle.h" Vendor/needle.h 914bbd00423939b02fc349f91cdb7c12531b3f5bb7105b743e0e93c7e409d7b1
+# Whisper runtime (whisper.cpp, MIT) for the Best accuracy mode.
+fetch "https://github.com/ggml-org/whisper.cpp/releases/download/b5454/whisper-b5454-xcframework.zip" Vendor/whisper-xcframework.zip e57f8c48933000acabc13bb913fbe82805d483a2deff692cc6738836bd92393b
+[ -d Vendor/whisper.xcframework ] || { unzip -q -o Vendor/whisper-xcframework.zip -d Vendor/whisper-tmp && mv Vendor/whisper-tmp/build-apple/whisper.xcframework Vendor/ && rm -rf Vendor/whisper-tmp; }
 fetch "$HF/whistle/resolve/$MODEL_REV/whistle.cact" Vendor/model.cact b6e02f048568ac5d01a2042556c658061e699acbc0aa2a1439f52f3d461dffeb
+# Whisper large-v3-turbo (MIT), the Best accuracy model: ~870 MB, so the first build takes a while.
+fetch "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo-q8_0.bin" Vendor/whisper-large-v3-turbo.bin 317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1
 
 swift build -c release
 BIN="$(swift build -c release --show-bin-path)/Hoole"
@@ -70,7 +75,9 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Framewor
 cp "$BIN" "$APP/Contents/MacOS/Hoole"
 cp Vendor/libneedle.dylib "$APP/Contents/Frameworks/"
 codesign --force --sign "$SIGN" "$APP/Contents/Frameworks/libneedle.dylib"
-cp Vendor/model.cact "$APP/Contents/Resources/model.cact"
+cp -R Vendor/whisper.xcframework/macos-arm64_x86_64/whisper.framework "$APP/Contents/Frameworks/"
+codesign --force --sign "$SIGN" "$APP/Contents/Frameworks/whisper.framework"
+cp Vendor/model.cact Vendor/whisper-large-v3-turbo.bin "$APP/Contents/Resources/"
 cp build/AppIcon.icns THIRD_PARTY_LICENSES "$APP/Contents/Resources/"
 cat > "$APP/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -83,8 +90,8 @@ cat > "$APP/Contents/Info.plist" <<EOF
     <key>CFBundleExecutable</key><string>Hoole</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>0.1.1</string>
-    <key>CFBundleVersion</key><string>2</string>
+    <key>CFBundleShortVersionString</key><string>0.2.0</string>
+    <key>CFBundleVersion</key><string>3</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>LSUIElement</key><true/>
     <key>NSMicrophoneUsageDescription</key><string>Hoole listens while you dictate. Audio is transcribed on this Mac and never leaves it.</string>

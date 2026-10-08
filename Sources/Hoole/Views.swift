@@ -56,11 +56,21 @@ struct PopoverView: View {
                     Label("Language", systemImage: "globe").foregroundStyle(ink.opacity(0.6))
                     Spacer()
                     Picker("", selection: $state.language) {
-                        ForEach(languages, id: \.code) { Text($0.name).tag($0.code) }
+                        ForEach(state.availableLanguages, id: \.code) { Text($0.name).tag($0.code) }
                     }
                     .labelsHidden()
                     .fixedSize()
                 }
+                HStack {
+                    Label("Best accuracy", systemImage: "sparkles").foregroundStyle(ink.opacity(0.6))
+                    Spacer()
+                    Toggle("", isOn: $state.bestAccuracy)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                        .disabled(!Whisper.isAvailable)
+                }
+                .help("On: types your words right after you release the key, most accurately. Off: types live while you talk, a little less accurately.")
                 HStack {
                     Label("Type where my cursor is", systemImage: "text.cursor").foregroundStyle(ink.opacity(0.6))
                     Spacer()

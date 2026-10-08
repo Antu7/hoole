@@ -30,24 +30,25 @@
 
 - **Works fully offline:** once installed, Hoole never needs the internet. There's no server to send your voice to; the speech model lives inside the app. Turn off Wi-Fi and it works exactly the same.
 - **Types for you, anywhere:** Notes, Slack, Mail, your browser, the terminal. If there's a cursor, Hoole can type there.
-- **Press to talk, release to stop:** press and hold **fn** while you speak; release it and Hoole stops listening. Words appear as you talk.
+- **Press to talk, release to stop:** press and hold **fn** while you speak; release it and Hoole types what you said.
 - **Private by design:** no account, no analytics, nothing uploaded. Ever.
-- **Fast:** words show up within about a second of saying them.
+- **Very accurate:** Hoole uses a large, high-quality speech model that gets names, punctuation and fast speech right. A typical sentence is typed about a second after you release the key.
 - **Your shortcut:** **fn** by default, or pick your own: a single key like **F5**, a combo like **⌥ Space**, or keys held together like **A + Space**.
-- **7 languages:** English (the default), German, French, Spanish, Italian, Dutch and Polish, or let Hoole detect the language.
+- **About 100 languages:** English by default, plus Bengali, Hindi, Urdu, Arabic, Chinese, Japanese, Spanish, French, German and many more, or let Hoole detect the language. (Accuracy is best for widely spoken languages, English especially.)
+- **Live mode too:** turn off *Best accuracy* and words are typed live while you talk, using a smaller, faster model (7 languages).
 - **No time limit:** talk for as long as you like.
 
 ## Requirements
 
 - A Mac with **Apple Silicon** (M1, M2, M3, M4 or later)
 - **macOS 14 Sonoma** or newer
-- About 30 MB of disk space
+- About 1 GB of disk space, and about 1 GB of memory while Hoole is running (8 GB of RAM or more recommended)
 
 ## Install
 
 ### Option A: Download (easiest)
 
-1. Download **Hoole.dmg** from the [latest release](https://github.com/antu7/hoole/releases/latest).
+1. Download **Hoole.dmg** (about 850 MB, since the speech models are included) from the [latest release](https://github.com/antu7/hoole/releases/latest).
 2. Open it and drag **Hoole** into **Applications**.
 3. Open Hoole from Applications. macOS will say it *can't verify the developer*. That's expected: Hoole is a free app and isn't registered with Apple. To open it anyway:
    - Click **Done** on the warning.
@@ -81,7 +82,7 @@ cd hoole
 ./scripts/build.sh
 ```
 
-The first build downloads the speech model (about 17 MB) and takes a minute or two.
+The first build downloads the speech models (about 900 MB in total), so it takes a few minutes depending on your connection.
 
 > **One-time password prompt:** on the first build, macOS asks for your password to trust a local signing certificate called "Hoole Local Signing". This lets macOS remember Hoole's permissions when you update or rebuild. If you skip it, Hoole still works, but macOS will ask for permissions again after every rebuild.
 
@@ -108,8 +109,8 @@ For Accessibility, macOS opens **System Settings → Privacy & Security → Acce
 ## How to use
 
 1. Click into any text field: a message, a document, a search box, a terminal.
-2. **Press and hold <kbd>fn</kbd> to talk.** A small bar at the bottom of the screen shows that Hoole is listening, along with your words.
-3. **Release <kbd>fn</kbd> to stop listening.** Your words are typed where your cursor was.
+2. **Press and hold <kbd>fn</kbd> to talk.** A small bar at the bottom of the screen shows that Hoole is listening, with a live preview of your words.
+3. **Release <kbd>fn</kbd> to stop listening.** About a second later, your words are typed where your cursor was.
 
 Want to keep going? Press <kbd>fn</kbd> again; Hoole adds a space and continues your sentence.
 
@@ -121,7 +122,8 @@ Want to keep going? Press <kbd>fn</kbd> again; Hoole adds a space and continues 
 |---|---|
 | **Shortcut** | Click it, then press the key or keys you want and let go. Esc cancels. |
 | **Microphone** | Choose which mic to use: built-in, AirPods, a USB mic, and so on. |
-| **Language** | English by default. Pick another language, or Auto-detect. |
+| **Language** | English by default. With *Best accuracy* on, choose from about 100 languages (Bengali, Hindi, Arabic, Chinese, …); with it off, from 7. Or Auto-detect. |
+| **Best accuracy** | On by default: Hoole types your words right after you release the key, as accurately as possible. Off: words are typed live while you talk, a little less accurately. |
 | **Type where my cursor is** | Turn this off to have Hoole copy text to the clipboard instead of typing it. |
 | **Recent** | Your last few dictations. Click one to copy it again. |
 

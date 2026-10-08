@@ -21,6 +21,7 @@ final class Transcriber {
 
     // Only touched on `queue`.
     private var buffered: [Float] = []
+    private var recording: [Float] = [] // the whole dictation at 16 kHz, for Whisper
     private var committed: [String] = []
     private var language: String?
 
@@ -43,6 +44,7 @@ final class Transcriber {
         queue.sync {
             self.language = language
             buffered = []
+            recording = []
             committed = []
         }
         // A fresh engine each time picks up the current device; a long-lived one can stay bound to a stale input.
@@ -64,8 +66,8 @@ final class Transcriber {
         try engine.start()
     }
 
-    /// `done` gets the text, and whether the mic was completely silent.
-    func stop(_ done: @escaping (String, Bool) -> Void) {
+    /// `done` gets the text, whether the mic was completely silent, and the whole recording.
+    func stop(_ done: @escaping (String, Bool, [Float]) -> Void) {
         engine.inputNode.removeTap(onBus: 0)
         engine.stop()
         // Runs after every chunk the tap already queued.
@@ -74,7 +76,8 @@ final class Transcriber {
             self.apply(self.call { needle_stream_transcribe_stop($0, $1) })
             let text = self.committed.joined(separator: " ")
             let silent = self.peak == 0
-            DispatchQueue.main.async { done(text, silent) }
+            let audio = self.recording
+            DispatchQueue.main.async { done(text, silent, audio) }
         }
     }
 
@@ -95,6 +98,7 @@ final class Transcriber {
         onLevel?(rms)
         queue.async {
             self.buffered += samples
+            self.recording += samples
             if self.buffered.count >= 16000 { self.process() } // ~1 s per pass, as the engine expects
         }
     }

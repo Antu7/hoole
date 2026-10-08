@@ -22,6 +22,8 @@ struct Entry: Codable, Identifiable {
     var date = Date()
 }
 
+/// The languages the live (Fast) engine understands. Best accuracy adds Whisper's full list.
+let liveLanguageCodes: Set<String> = ["en", "de", "fr", "es", "it", "nl", "pl"]
 let languages: [(code: String, name: String)] = [
     ("", "Auto-detect"), ("en", "English"), ("de", "German"), ("fr", "French"),
     ("es", "Spanish"), ("it", "Italian"), ("nl", "Dutch"), ("pl", "Polish"),
@@ -54,11 +56,28 @@ final class AppState {
     var micUID = UserDefaults.standard.string(forKey: "micUID") ?? "" {
         didSet { UserDefaults.standard.set(micUID, forKey: "micUID") }
     }
+    /// Best = Whisper transcribes the whole recording on release: more accurate, not live. On by default.
+    var bestAccuracy = UserDefaults.standard.object(forKey: "bestAccuracy") as? Bool ?? true {
+        didSet {
+            UserDefaults.standard.set(bestAccuracy, forKey: "bestAccuracy")
+            if bestAccuracy { whisper.warmUp() }
+            // Fast mode can't do Whisper-only languages like Bengali; fall back to English.
+            if !bestAccuracy && !language.isEmpty && !liveLanguageCodes.contains(language) { language = "en" }
+        }
+    }
     var shortcut: Shortcut = load("shortcut") ?? .fn {
         didSet { save(shortcut, "shortcut"); keys.shortcut = shortcut }
     }
 
     private let transcriber = Transcriber()
+    private let whisper = Whisper()
+    private var usingWhisper = false // for the dictation in progress
+    private var livePreview = true   // the live engine knows this language, so its words are worth showing
+
+    /// What the Language menu offers: Whisper's ~99 languages with Best accuracy on, otherwise the live engine's 7.
+    var availableLanguages: [(code: String, name: String)] {
+        bestAccuracy && Whisper.isAvailable ? [("", "Auto-detect")] + Whisper.languages : languages
+    }
     private let hud = HUD()
     let keys = KeyWatcher()
     private var typing = false     // typing into another app for this dictation
@@ -68,12 +87,12 @@ final class AppState {
 
     private init() {
         transcriber.onUpdate = { [weak self] committed, pending in
-            guard let self, self.phase == .recording || self.phase == .finishing else { return }
+            guard let self, self.livePreview, self.phase == .recording || self.phase == .finishing else { return }
             self.committed = committed
             self.pending = pending
         }
         transcriber.onCommit = { [weak self] words in
-            guard let self, self.typing else { return }
+            guard let self, self.typing, !self.usingWhisper else { return } // Whisper types once, on release
             type((self.typedAnything ? " " : "") + words)
             self.typedAnything = true
         }
@@ -95,6 +114,7 @@ final class AppState {
         keys.onPress = { [weak self] in if self?.phase == .ready { self?.start() } }
         keys.onRelease = { [weak self] in if self?.phase == .recording { self?.stop() } }
         keys.start()
+        if bestAccuracy { whisper.warmUp() }
     }
 
     func toggle() {
@@ -128,7 +148,9 @@ final class AppState {
             // ponytail: same app as last time → assume the cursor sits right after our text, so continue with a space.
             // Reading the text before the cursor via AX would be exact, but terminals don't expose it.
             typedAnything = typing && target == lastTarget
-            try transcriber.start(language: language.isEmpty ? nil : language, micUID: micUID.isEmpty ? nil : micUID)
+            usingWhisper = bestAccuracy && Whisper.isAvailable
+            livePreview = language.isEmpty || liveLanguageCodes.contains(language)
+            try transcriber.start(language: liveLanguageCodes.contains(language) ? language : nil, micUID: micUID.isEmpty ? nil : micUID)
             phase = .recording
             hud.show()
         } catch {
@@ -139,9 +161,22 @@ final class AppState {
     private func stop() {
         phase = .finishing
         levels = levels.map { _ in 0 }
-        transcriber.stop { [weak self] text, silent in
+        transcriber.stop { [weak self] fastText, silent, audio in
             // Every onCommit has already run: they're queued on main ahead of this.
             guard let self else { return }
+            guard self.usingWhisper, !silent, !audio.isEmpty else { return self.finish(fastText, silent: silent) }
+            self.committed = self.livePreview ? fastText : ""
+            self.pending = ""
+            self.whisper.transcribe(audio, language: self.language.isEmpty ? nil : self.language) { text, _ in
+                if self.typing && !text.isEmpty {
+                    type((self.typedAnything ? " " : "") + text)
+                }
+                self.finish(text, silent: false)
+            }
+        }
+    }
+
+    private func finish(_ text: String, silent: Bool) {
             self.committed = text
             self.pending = ""
             self.phase = .ready
@@ -160,7 +195,6 @@ final class AppState {
             if self.typing && !text.isEmpty { self.lastTarget = self.target }
             self.typing = false
             self.hud.hide(after: 1.2)
-        }
     }
 }
 
@@ -170,7 +204,7 @@ func copy(_ text: String) {
 }
 
 /// Types text at the cursor of the frontmost app as Unicode key events. Needs Accessibility permission.
-private func type(_ text: String) {
+func type(_ text: String) {
     // Private state: the shortcut's physically held modifiers (e.g. ⇧) must not leak into the typed text.
     let source = CGEventSource(stateID: .privateState)
     let units = Array(text.utf16)
