@@ -29,6 +29,8 @@ fetch "https://github.com/ggml-org/whisper.cpp/releases/download/b5454/whisper-b
 fetch "$HF/whistle/resolve/$MODEL_REV/whistle.cact" Vendor/model.cact b6e02f048568ac5d01a2042556c658061e699acbc0aa2a1439f52f3d461dffeb
 # Whisper large-v3-turbo (MIT), the Best accuracy model: ~870 MB, so the first build takes a while.
 fetch "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo-q8_0.bin" Vendor/whisper-large-v3-turbo.bin 317eb69c11673c9de1e1f0d459b253999804ec71ac4c23c17ecf5fbe24e259a1
+# Silero voice activity detector (MIT, <1 MB): Whisper only transcribes stretches that contain speech.
+fetch "https://huggingface.co/ggml-org/whisper-vad/resolve/9ffd54a1e1ee413ddf265af9913beaf518d1639b/ggml-silero-v5.1.2.bin" Vendor/whisper-vad.bin 29940d98d42b91fbd05ce489f3ecf7c72f0a42f027e4875919a28fb4c04ea2cf
 
 swift build -c release
 BIN="$(swift build -c release --show-bin-path)/Hoole"
@@ -77,7 +79,7 @@ cp Vendor/libneedle.dylib "$APP/Contents/Frameworks/"
 codesign --force --sign "$SIGN" "$APP/Contents/Frameworks/libneedle.dylib"
 cp -R Vendor/whisper.xcframework/macos-arm64_x86_64/whisper.framework "$APP/Contents/Frameworks/"
 codesign --force --sign "$SIGN" "$APP/Contents/Frameworks/whisper.framework"
-cp Vendor/model.cact Vendor/whisper-large-v3-turbo.bin "$APP/Contents/Resources/"
+cp Vendor/model.cact Vendor/whisper-large-v3-turbo.bin Vendor/whisper-vad.bin "$APP/Contents/Resources/"
 cp build/AppIcon.icns THIRD_PARTY_LICENSES "$APP/Contents/Resources/"
 cat > "$APP/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -90,8 +92,8 @@ cat > "$APP/Contents/Info.plist" <<EOF
     <key>CFBundleExecutable</key><string>Hoole</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>0.2.1</string>
-    <key>CFBundleVersion</key><string>4</string>
+    <key>CFBundleShortVersionString</key><string>0.2.2</string>
+    <key>CFBundleVersion</key><string>5</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>LSUIElement</key><true/>
     <key>NSMicrophoneUsageDescription</key><string>Hoole listens while you dictate. Audio is transcribed on this Mac and never leaves it.</string>

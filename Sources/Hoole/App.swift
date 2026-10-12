@@ -161,11 +161,11 @@ final class AppState {
     private func stop() {
         phase = .finishing
         levels = levels.map { _ in 0 }
-        transcriber.stop { [weak self] fastText, silent, audio in
+        transcriber.stop { [weak self] fastText, silent, audio, tooQuiet in
             // Every onCommit has already run: they're queued on main ahead of this.
             guard let self else { return }
             guard self.usingWhisper, !silent else { return self.finish(fastText, silent: silent) }
-            guard !audio.isEmpty else { return self.finish("", silent: false) } // no speech: don't let Whisper invent some
+            guard !audio.isEmpty else { return self.finish("", silent: false, tooQuiet: tooQuiet) } // no speech: don't let Whisper invent some
             self.committed = self.livePreview ? fastText : ""
             self.pending = ""
             self.whisper.transcribe(audio, language: self.language.isEmpty ? nil : self.language) { text, _ in
@@ -177,12 +177,13 @@ final class AppState {
         }
     }
 
-    private func finish(_ text: String, silent: Bool) {
+    private func finish(_ text: String, silent: Bool, tooQuiet: Bool = false) {
             self.committed = text
             self.pending = ""
             self.phase = .ready
             if text.isEmpty {
-                self.flash = silent ? "No sound from the mic. Pick another in the menu" : "Didn't catch that"
+                self.flash = silent ? "No sound from the mic. Pick another in the menu"
+                    : tooQuiet ? "Too quiet. Speak closer to the mic" : "Didn't catch that"
             } else {
                 self.history.insert(Entry(text: text), at: 0)
                 if self.history.count > 50 { self.history.removeLast(self.history.count - 50) }

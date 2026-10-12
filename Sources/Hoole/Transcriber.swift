@@ -1,5 +1,4 @@
 import AVFoundation
-import CoreAudio
 import CEngine
 
 /// Mic → 16 kHz mono floats → live speech recognition.
@@ -12,10 +11,10 @@ final class Transcriber {
     /// Audio thread. RMS of each mic buffer.
     var onLevel: ((Float) -> Void)?
 
-    private var engine = AVAudioEngine()
-    private var peak: Float = 0 // loudest raw sample this dictation; 0 means the mic sent pure silence
+    private var session: AVCaptureSession?
+    private let audioQueue = DispatchQueue(label: "hoole.audio") // mic callbacks, and starting/stopping the mic
+    private lazy var tap = SampleTap { [weak self] in self?.handle($0) }
     private let queue = DispatchQueue(label: "hoole.engine")
-    private let format16k = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 16000, channels: 1, interleaved: false)!
     private let outCapacity: Int32 = 1 << 18
     private lazy var out = UnsafeMutablePointer<CChar>.allocate(capacity: Int(outCapacity)) // ponytail: lives as long as the app
 
@@ -24,6 +23,7 @@ final class Transcriber {
     private var recording: [Float] = [] // the whole dictation at 16 kHz, for Whisper
     private var committed: [String] = []
     private var language: String?
+    private var peak: Float = 0 // loudest sample this dictation; 0 means the mic sent pure silence
 
     func load(_ done: @escaping (String?) -> Void) {
         queue.async {
@@ -39,64 +39,64 @@ final class Transcriber {
         }
     }
 
-    /// `micUID` picks an input device; nil follows the system default.
+    /// `micUID` picks an input device; nil, or one that's unplugged, uses the system default.
+    /// The mic starts on a background queue: if an audio driver misbehaves, recording stalls but the app never freezes.
     func start(language: String?, micUID: String?) throws {
         queue.sync {
             self.language = language
             buffered = []
             recording = []
             committed = []
+            peak = 0
         }
-        // A fresh engine each time picks up the current device; a long-lived one can stay bound to a stale input.
-        engine = AVAudioEngine()
-        peak = 0
-        let input = engine.inputNode
-        if var device = micUID.flatMap(deviceID(uid:)), let unit = input.audioUnit {
-            AudioUnitSetProperty(unit, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0,
-                                 &device, UInt32(MemoryLayout<AudioDeviceID>.size))
+        guard let device = micUID.flatMap(AVCaptureDevice.init(uniqueID:)) ?? AVCaptureDevice.default(for: .audio) else {
+            throw NSError(domain: "Hoole", code: 1, userInfo: [NSLocalizedDescriptionKey: "No microphone found"])
         }
-        let inFormat = input.outputFormat(forBus: 0)
-        guard let converter = AVAudioConverter(from: inFormat, to: format16k) else {
-            throw NSError(domain: "Hoole", code: 1, userInfo: [NSLocalizedDescriptionKey: "Unsupported microphone format"])
+        let input = try AVCaptureDeviceInput(device: device)
+        let output = AVCaptureAudioDataOutput()
+        // The capture pipeline converts for us, to what the speech engines expect: 16 kHz mono float.
+        output.audioSettings = [
+            AVFormatIDKey: kAudioFormatLinearPCM, AVSampleRateKey: 16000, AVNumberOfChannelsKey: 1,
+            AVLinearPCMBitDepthKey: 32, AVLinearPCMIsFloatKey: true, AVLinearPCMIsNonInterleaved: false,
+            AVLinearPCMIsBigEndianKey: false,
+        ]
+        output.setSampleBufferDelegate(tap, queue: audioQueue)
+        let session = AVCaptureSession()
+        guard session.canAddInput(input), session.canAddOutput(output) else {
+            throw NSError(domain: "Hoole", code: 2, userInfo: [NSLocalizedDescriptionKey: "Can't record from \(device.localizedName)"])
         }
-        input.installTap(onBus: 0, bufferSize: 4096, format: inFormat) { [weak self] buffer, _ in
-            self?.handle(buffer, converter)
-        }
-        engine.prepare()
-        try engine.start()
+        session.addInput(input)
+        session.addOutput(output)
+        self.session = session
+        audioQueue.async { session.startRunning() }
     }
 
-    /// `done` gets the text, whether the mic was completely silent, and the whole recording (empty if no speech).
-    func stop(_ done: @escaping (String, Bool, [Float]) -> Void) {
-        engine.inputNode.removeTap(onBus: 0)
-        engine.stop()
-        // Runs after every chunk the tap already queued.
-        queue.async {
-            if !self.buffered.isEmpty { self.process() }
-            self.apply(self.call { needle_stream_transcribe_stop($0, $1) })
-            let text = self.committed.joined(separator: " ")
-            let silent = self.peak == 0
-            let audio = containsSpeech(self.recording) ? self.recording : []
-            DispatchQueue.main.async { done(text, silent, audio) }
+    /// `done` gets the text, whether the mic was completely silent, the whole recording (empty if no speech),
+    /// and whether it was too quiet to tell speech from background noise.
+    func stop(_ done: @escaping (String, Bool, [Float], Bool) -> Void) {
+        let session = self.session
+        self.session = nil
+        audioQueue.async {
+            session?.stopRunning()
+            // A second hop, so any buffer delivered while stopping is handed over first.
+            self.audioQueue.async {
+                self.queue.async {
+                    if !self.buffered.isEmpty { self.process() }
+                    self.apply(self.call { needle_stream_transcribe_stop($0, $1) })
+                    let text = self.committed.joined(separator: " ")
+                    let silent = self.peak == 0
+                    let heard = hearing(self.recording)
+                    let audio = heard == .speech ? normalized(self.recording) : []
+                    DispatchQueue.main.async { done(text, silent, audio, heard == .tooQuiet) }
+                }
+            }
         }
     }
 
-    private func handle(_ buffer: AVAudioPCMBuffer, _ converter: AVAudioConverter) {
-        let capacity = AVAudioFrameCount(Double(buffer.frameLength) * 16000 / buffer.format.sampleRate) + 1
-        guard let converted = AVAudioPCMBuffer(pcmFormat: format16k, frameCapacity: capacity) else { return }
-        var fed = false
-        converter.convert(to: converted, error: nil) { _, status in
-            if fed { status.pointee = .noDataNow; return nil }
-            fed = true
-            status.pointee = .haveData
-            return buffer
-        }
-        let samples = Array(UnsafeBufferPointer(start: converted.floatChannelData![0], count: Int(converted.frameLength)))
-        guard !samples.isEmpty else { return }
-        let rms = sqrt(samples.reduce(0) { $0 + $1 * $1 } / Float(samples.count))
-        peak = max(peak, samples.lazy.map(abs).max() ?? 0)
-        onLevel?(rms)
+    private func handle(_ samples: [Float]) {
+        onLevel?(sqrt(samples.reduce(0) { $0 + $1 * $1 } / Float(samples.count)))
         queue.async {
+            self.peak = max(self.peak, samples.lazy.map(abs).max() ?? 0)
             self.buffered += samples
             self.recording += samples
             if self.buffered.count >= 16000 { self.process() } // ~1 s per pass, as the engine expects
@@ -146,56 +146,43 @@ struct InputDevice: Hashable {
     let name: String
 }
 
-/// Audio devices that can record, as CoreAudio lists them.
+/// Microphones the system can record from.
 func inputDevices() -> [InputDevice] {
-    var address = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyDevices, mScope: kAudioObjectPropertyScopeGlobal,
-                                             mElement: kAudioObjectPropertyElementMain)
-    var size: UInt32 = 0
-    AudioObjectGetPropertyDataSize(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size)
-    var ids = [AudioDeviceID](repeating: 0, count: Int(size) / MemoryLayout<AudioDeviceID>.size)
-    AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size, &ids)
-    return ids.compactMap { id in
-        var streams = AudioObjectPropertyAddress(mSelector: kAudioDevicePropertyStreams, mScope: kAudioDevicePropertyScopeInput,
-                                                 mElement: kAudioObjectPropertyElementMain)
-        var count: UInt32 = 0
-        guard AudioObjectGetPropertyDataSize(id, &streams, 0, nil, &count) == noErr, count > 0,
-              let name = stringProperty(id, kAudioObjectPropertyName), !name.hasPrefix("CADefaultDevice"),
-              let uid = stringProperty(id, kAudioDevicePropertyDeviceUID) else { return nil }
-        return InputDevice(uid: uid, name: name)
+    AVCaptureDevice.DiscoverySession(deviceTypes: [.microphone, .external], mediaType: .audio, position: .unspecified)
+        .devices.map { InputDevice(uid: $0.uniqueID, name: $0.localizedName) }
+}
+
+/// Copies each captured buffer's samples out (already 16 kHz mono float, per `audioSettings`).
+private final class SampleTap: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
+    let onSamples: ([Float]) -> Void
+    init(_ onSamples: @escaping ([Float]) -> Void) { self.onSamples = onSamples }
+
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        guard let block = CMSampleBufferGetDataBuffer(sampleBuffer) else { return }
+        var samples = [Float](repeating: 0, count: CMBlockBufferGetDataLength(block) / MemoryLayout<Float>.size)
+        guard !samples.isEmpty else { return }
+        CMBlockBufferCopyDataBytes(block, atOffset: 0, dataLength: samples.count * MemoryLayout<Float>.size, destination: &samples)
+        onSamples(samples)
     }
 }
 
-private func deviceID(uid: String) -> AudioDeviceID? {
-    var address = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyTranslateUIDToDevice, mScope: kAudioObjectPropertyScopeGlobal,
-                                             mElement: kAudioObjectPropertyElementMain)
-    var cfUID = uid as CFString
-    var id = AudioDeviceID(0)
-    var size = UInt32(MemoryLayout<AudioDeviceID>.size)
-    let status = withUnsafePointer(to: &cfUID) {
-        AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, UInt32(MemoryLayout<CFString>.size), $0, &size, &id)
-    }
-    return status == noErr && id != 0 ? id : nil // nil when it's unplugged: fall back to the default
-}
+enum Hearing { case speech, noSpeech, tooQuiet }
 
-private func stringProperty(_ id: AudioObjectID, _ selector: AudioObjectPropertySelector) -> String? {
-    var address = AudioObjectPropertyAddress(mSelector: selector, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
-    var value: Unmanaged<CFString>?
-    var size = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
-    guard AudioObjectGetPropertyData(id, &address, 0, nil, &size, &value) == noErr, let value else { return nil }
-    return value.takeRetainedValue() as String
-}
-
-/// A rough voice check: speech has syllables much louder than the room's background hum; steady noise doesn't.
-/// Whisper invents phrases ("Thank you.", "I'm sorry.") when given only noise, so it shouldn't get any.
-/// ponytail: energy heuristic; a real VAD model is the upgrade if this misfires on very quiet speakers.
-func containsSpeech(_ samples: [Float]) -> Bool {
+/// A loudness check before Whisper. Telling speech from noise is the VAD model's job (see Whisper.vadURL);
+/// this only catches recordings too short, or so quiet that nothing in them could be a voice, to say so in the pill.
+func hearing(_ samples: [Float]) -> Hearing {
     let frame = 1600 // 100 ms at 16 kHz
-    guard samples.count >= frame * 3 else { return false }
-    var levels: [Float] = stride(from: 0, to: samples.count - frame, by: frame).map { start in
+    guard samples.count >= frame * 3 else { return .noSpeech }
+    let loudest = stride(from: 0, to: samples.count - frame, by: frame).map { start in
         sqrt(samples[start..<start + frame].reduce(0) { $0 + $1 * $1 } / Float(frame))
-    }
-    levels.sort()
-    let background = levels[levels.count / 5]           // quiet 20th percentile
-    let loud = levels[min(levels.count - 1, levels.count * 95 / 100)]
-    return loud > 0.008 && loud > background * 2.5
+    }.max() ?? 0
+    return loudest < 0.005 ? .tooQuiet : .speech
+}
+
+/// Brings a soft recording up to a normal level (peak ≈ 0.5, at most 20× louder), so Whisper hears quiet voices clearly.
+func normalized(_ samples: [Float]) -> [Float] {
+    let peak = samples.lazy.map(abs).max() ?? 0
+    guard peak > 0, peak < 0.5 else { return samples }
+    let gain = min(20, 0.5 / peak)
+    return samples.map { $0 * gain }
 }

@@ -6,6 +6,8 @@ import whisper
 final class Whisper {
     static let modelURL = Bundle.main.url(forResource: "whisper-large-v3-turbo", withExtension: "bin")
     static var isAvailable: Bool { modelURL != nil }
+    /// Voice activity detector: Whisper skips stretches without speech, so it can't invent words from room noise.
+    static let vadURL = Bundle.main.url(forResource: "whisper-vad", withExtension: "bin")
 
     /// Every language Whisper understands (about 99), as (code, English name), sorted by name.
     static let languages: [(code: String, name: String)] = (0...whisper_lang_max_id())
@@ -46,14 +48,18 @@ final class Whisper {
                 params.no_timestamps = true
                 params.translate = false
                 params.suppress_nst = true // drop non-speech tokens like "[music]"
-                text = (language ?? "auto").withCString { lang in
+                text = (language ?? "auto").withCString { lang in (Self.vadURL?.path ?? "").withCString { vadPath in
                     params.language = lang
+                    if Self.vadURL != nil {
+                        params.vad = true
+                        params.vad_model_path = vadPath
+                    }
                     let code = samples.withUnsafeBufferPointer { whisper_full(context, params, $0.baseAddress, Int32($0.count)) }
                     guard code == 0 else { return "" }
                     return (0..<whisper_full_n_segments(context))
                         .map { String(cString: whisper_full_get_segment_text(context, $0)) }
                         .joined()
-                }
+                } }
             }
             let elapsed = Date().timeIntervalSince(started)
             var result = text.trimmingCharacters(in: .whitespacesAndNewlines)
